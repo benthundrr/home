@@ -17,6 +17,7 @@ html{scroll-behavior:smooth}
   --m1:#ff6b7a;--m2:#ff0a3b;--m3:#c0001f;--m4:#ff4d60;--m5:#7a0012;
 }
 body{font-family:'Montserrat',sans-serif;background:var(--bk);color:var(--w);overflow-x:hidden;cursor:none}
+@media(hover:none),(pointer:coarse){body{cursor:auto}a,button{cursor:pointer}#cur,#ring{display:none!important}}
 
 /* ─── PARTICLE CANVAS ─── */
 #particles{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
@@ -1275,15 +1276,36 @@ select.pp-input{cursor:pointer;appearance:none;background-image:url("data:image/
 </div>
 
 <script>
-/* ─── CURSOR ─── */
+/* ─── CURSOR — desktop only ─── */
+const isTouchDevice=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 const cur=document.getElementById('cur'),ring=document.getElementById('ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
-(function loop(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;cur.style.left=mx+'px';cur.style.top=my+'px';ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop)})();
-document.querySelectorAll('a,button,.ccard,.case-tile,.svc,.pill,.ss-cell').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{cur.style.width='14px';cur.style.height='14px';ring.style.width='54px';ring.style.height='54px'});
-  el.addEventListener('mouseleave',()=>{cur.style.width='8px';cur.style.height='8px';ring.style.width='36px';ring.style.height='36px'});
-});
+if(isTouchDevice){
+  /* On mobile: hide cursor elements, restore default cursor, skip all cursor JS */
+  if(cur)cur.style.display='none';
+  if(ring)ring.style.display='none';
+  document.body.style.cursor='';
+  document.querySelectorAll('a,button,.ccard,.case-tile,.svc,.pp-gmv-opt,.modal-close,.popup-close').forEach(el=>{el.style.cursor=''});
+} else {
+  let mx=0,my=0,rx=0,ry=0,rafId;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY},{passive:true});
+  function cursorLoop(){
+    rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
+    cur.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`;
+    ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+    rafId=requestAnimationFrame(cursorLoop);
+  }
+  /* Use transform instead of left/top — avoids layout reflow, much faster */
+  cur.style.left='0';cur.style.top='0';
+  ring.style.left='0';ring.style.top='0';
+  cursorLoop();
+  document.querySelectorAll('a,button,.ccard,.case-tile,.svc,.pill,.ss-cell').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cur.style.width='14px';cur.style.height='14px';ring.style.width='54px';ring.style.height='54px'},{passive:true});
+    el.addEventListener('mouseleave',()=>{cur.style.width='8px';cur.style.height='8px';ring.style.width='36px';ring.style.height='36px'},{passive:true});
+  });
+  /* Hide cursor when leaving window */
+  document.addEventListener('mouseleave',()=>{cur.style.opacity='0';ring.style.opacity='0'},{passive:true});
+  document.addEventListener('mouseenter',()=>{cur.style.opacity='1';ring.style.opacity='1'},{passive:true});
+}
 
 /* ─── PARTICLE CANVAS ─── */
 (function(){
